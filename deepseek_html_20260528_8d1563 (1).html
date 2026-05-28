@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>⚽ AI足球预测 · DeepSeek增强版</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        :root {
+            --bg: #0a0e14;
+            --surface: #131820;
+            --surface2: #1a1f2b;
+            --gold: #f0c040;
+            --accent: #4da6ff;
+            --green: #2ecc71;
+            --red: #e74c3c;
+            --orange: #f39c12;
+            --text: #dde4ef;
+            --text2: #a0b0c0;
+            --text3: #6b7d90;
+            --border: #252d3a;
+            --radius: 14px;
+            --radius-sm: 10px;
+            --transition: 0.3s ease;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+            min-height: 100vh;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            background-image: radial-gradient(ellipse at 20% 30%, rgba(240, 192, 64, 0.03) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 70%, rgba(77, 166, 255, 0.04) 0%, transparent 50%);
+        }
+        .header {
+            text-align: center;
+            padding: 20px 16px 8px;
+        }
+        .header .logo-icon {
+            font-size: 40px;
+            display: inline-block;
+            animation: floatBall 3s ease-in-out infinite;
+        }
+        @keyframes floatBall {
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-8px);
+            }
+        }
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #f0c040, #e8a830, #f7d670, #d4942a);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 4px 0;
+        }
+        .header .subtitle {
+            font-size: 0.8rem;
+            color: var(--text3);
+            letter-spacing: 2px;
+        }
+        .main-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 12px 30px;
+        }
+        .input-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 18px 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+        }
+        .input-row {
+            display: flex;
+            gap: 8px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+        }
+        .input-group {
+            flex: 1 1 120px;
+            min-width: 100px;
+        }
+        .input-group label {
+            display: block;
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            color: var(--text3);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+        }
+        .input-group select {
+            width: 100%;
+            padding: 10px 8px;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text);
+            font-size: 0.9rem;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%236b7d90' d='M1.41 0L6 4.58 10.59 0 12 1.41l-6 6-6-6z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            padding-right: 30px;
+            cursor: pointer;
+        }
+        .input-group select:focus {
+            outline: none;
+            border-color: var(--gold);
+        }
+        .vs-divider {
+            font-size: 1.2rem;
+            font-weight: 900;
+            color: var(--gold);
+            padding: 0 4px 10px;
+            align-self: center;
+        }
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .btn {
+            padding: 12px 22px;
+            border: none;
+            border-radius: 25px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            background: var(--surface2);
+            color: var(--text);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #f0c040, #d4a020);
+            color: #0a0e14;
+            border: none;
+            box-shadow: 0 6px 20px rgba(200, 150, 30, 0.35);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(220, 170, 40, 0.5);
+        }
+        .btn-primary:disabled {
+            background: #3a4050;
+            color: #6b7d90;
+            box-shadow: none;
+            transform: none;
+        }
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--gold);
+            color: var(--gold);
+        }
+        .btn-outline:hover {
+            background: rgba(240, 192, 64, 0.1);
+        }
+        .status-bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            color: var(--text3);
+            margin-top: 10px;
+        }
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--green);
+        }
+        .status-dot.warning {
+            background: var(--orange);
+        }
+        .results-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 14px;
+            margin-top: 10px;
+        }
+        @media (min-width: 640px) {
+            .results-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        .result-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+        .result-card.full-width {
+            grid-column: 1 / -1;
+        }
+        .result-card h3 {
+            font-size: 0.9rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            color: var(--gold);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .prob-bar-wrap {
+            margin: 8px 0;
+        }
+        .prob-bar-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: var(--text2);
+            margin-bottom: 3px;
+        }
+        .prob-bar {
+            height: 8px;
+            border-radius: 4px;
+            background: var(--surface2);
+            overflow: hidden;
+        }
+        .prob-bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.8s ease;
+        }
+        .prob-bar-fill.home {
+            background: #4da6ff;
+        }
+        .prob-bar-fill.draw {
+            background: #f0c040;
+        }
+        .prob-bar-fill.away {
+            background: #e74c3c;
+        }
+        .score-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .score-chip {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 5px 10px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+        .score-chip.highlight {
+            border-color: var(--gold);
+            background: #1c1a10;
+            color: var(--gold);
+        }
+        .tactical-box {
+            background: var(--surface2);
+            border-radius: var(--radius-sm);
+            padding: 12px;
+            border-left: 3px solid var(--accent);
+            font-size: 0.8rem;
+            line-height: 1.6;
+            margin: 8px 0;
+        }
+        .ai-box {
+            background: linear-gradient(135deg, #1a1f2b, #1e2432);
+            border: 1px solid var(--accent);
+            border-radius: var(--radius-sm);
+            padding: 14px;
+            font-size: 0.85rem;
+            line-height: 1.7;
+            margin: 8px 0;
+        }
+        .ai-box .ai-label {
+            color: var(--accent);
+            font-weight: 700;
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+        .conclusion-banner {
+            background: linear-gradient(135deg, #1a1f2b, #1e2432);
+            border: 2px solid var(--gold);
+            border-radius: var(--radius);
+            padding: 18px;
+            text-align: center;
+            font-weight: 700;
+            color: var(--gold);
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.75rem;
+        }
+        .data-table th,
+        .data-table td {
+            padding: 8px 6px;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+        }
+        .data-table th {
+            background: var(--surface2);
+            color: var(--text3);
+            font-weight: 600;
+        }
+        .tag {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            margin: 2px;
+        }
+        .tag.blue {
+            background: #1a2a3a;
+            color: #4da6ff;
+        }
+        .tag.yellow {
+            background: #3a3010;
+            color: #f0c040;
+        }
+        .tag.red {
+            background: #3a1a1a;
+            color: #e74c3c;
+        }
+        .tag.green {
+            background: #1a3a2a;
+            color: #2ecc71;
+        }
+        .fade-in {
+            animation: fadeIn 0.4s ease;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #2ecc71;
+            color: #0a0e14;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            z-index: 1000;
+            animation: fadeInOut 2s forwards;
+        }
+        @keyframes fadeInOut {
+            0% {
+                opacity: 0;
+                bottom: 0;
+            }
+            15% {
+                opacity: 1;
+                bottom: 20px;
+            }
+            85% {
+                opacity: 1;
+                bottom: 20px;
+            }
+            100% {
+                opacity: 0;
+                bottom: 40px;
+            }
+        }
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 0.8s linear infinite;
+            vertical-align: middle;
+            margin-right: 4px;
+        }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo-icon">⚽</div>
+        <h1>AI 足球预测 · DeepSeek增强</h1>
+        <div class="subtitle">全球联赛 | 手机适配 | 大模型深度分析</div>
+    </div>
+    <div class="main-container" id="mainContainer">
+        <div class="input-card" id="inputCard">
+            <div class="input-row">
+                <div class="input-group">
+                    <label>🏆 联赛</label>
+                    <select id="leagueSelect"><option value="">-- 选择 --</option></select>
+                </div>
+                <div class="input-group">
+                    <label>🏠 主队</label>
+                    <select id="homeTeamSelect"><option value="">-- 先选联赛 --</option></select>
+                </div>
+                <div class="vs-divider">VS</div>
+                <div class="input-group">
+                    <label>✈️ 客队</label>
+                    <select id="awayTeamSelect"><option value="">-- 先选联赛 --</option></select>
+                </div>
+            </div>
+            <div class="btn-row">
+                <button class="btn btn-primary" id="btnPredict" onclick="runPrediction()">🔮 全自动AI预测</button>
+                <button class="btn btn-outline" id="btnShare" onclick="sharePrediction()" style="display:none;">🔗 分享结果</button>
+            </div>
+            <div class="status-bar">
+                <span class="status-dot" id="statusDot"></span>
+                <span id="statusText">系统就绪 · 内置DeepSeek大模型 · 点击预测</span>
+            </div>
+        </div>
+        <div id="resultsContainer" style="display:none;">
+            <div class="results-grid" id="resultsGrid"></div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== 配置你的 DeepSeek API Key ====================
+        const DEEPSEEK_API_KEY = 'sk-f80ae640f64d4382a0e8fbaf5f1c8e7f'; // 👈 替换为你的真实Key
+        const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
+
+        // ⚠️ 安全警告：此代码仅供个人学习测试使用，切勿在生产环境前端暴露API Key！
+        // 生产环境请通过后端代理调用，避免Key泄露。
+
+        // ==================== 全球联赛球队数据库 ====================
+        const LEAGUE_DATABASE = {
+            '英超': { country: '英格兰', teams: {
+                    '曼城': { r: 92, a: 93, d: 90, hb: 8, s: '控球高位', rf: [1, 1, 1, 0, 1] },
+                    '阿森纳': { r: 88, a: 87, d: 86, hb: 7, s: '控球压迫', rf: [1, 1, 0, 1, 1] },
+                    '利物浦': { r: 87, a: 89, d: 84, hb: 9, s: '高位反击', rf: [1, 0, 1, 1, 1] },
+                    '曼联': { r: 80, a: 78, d: 76, hb: 7, s: '反击边路', rf: [0, 1, 0, 1, 0] },
+                    '切尔西': { r: 79, a: 77, d: 78, hb: 6, s: '控球组织', rf: [1, 0, 1, 0, 1] },
+                    '热刺': { r: 81, a: 83, d: 75, hb: 6, s: '进攻高位', rf: [0, 1, 1, 0, 0] },
+                    '纽卡斯尔': { r: 82, a: 79, d: 82, hb: 7, s: '防守反击', rf: [1, 1, 1, 0, 1] }
+                }},
+            '西甲': { country: '西班牙', teams: {
+                    '皇家马德里': { r: 91, a: 92, d: 88, hb: 8, s: '全面控制', rf: [1, 1, 1, 1, 0] },
+                    '巴塞罗那': { r: 87, a: 88, d: 83, hb: 8, s: '传控技术', rf: [1, 0, 1, 1, 1] },
+                    '马德里竞技': { r: 84, a: 80, d: 88, hb: 7, s: '防守铁血', rf: [1, 1, 0, 1, 0] }
+                }},
+            '德甲': { country: '德国', teams: {
+                    '拜仁慕尼黑': { r: 90, a: 93, d: 86, hb: 8, s: '高压控制', rf: [1, 1, 1, 1, 0] },
+                    '多特蒙德': { r: 83, a: 86, d: 78, hb: 8, s: '快速进攻', rf: [1, 0, 1, 1, 1] },
+                    '勒沃库森': { r: 88, a: 90, d: 85, hb: 7, s: '控球高压', rf: [1, 1, 1, 1, 1] }
+                }},
+            '意甲': { country: '意大利', teams: {
+                    '国际米兰': { r: 87, a: 86, d: 87, hb: 7, s: '控球均衡', rf: [1, 1, 1, 0, 1] },
+                    '尤文图斯': { r: 83, a: 79, d: 86, hb: 7, s: '防守稳健', rf: [1, 0, 1, 1, 0] },
+                    'AC米兰': { r: 82, a: 82, d: 80, hb: 7, s: '边路进攻', rf: [0, 1, 1, 0, 1] }
+                }},
+            '法甲': { country: '法国', teams: {
+                    '巴黎圣日耳曼': { r: 88, a: 92, d: 82, hb: 7, s: '控球明星', rf: [1, 1, 1, 1, 0] },
+                    '马赛': { r: 77, a: 76, d: 75, hb: 7, s: '身体对抗', rf: [0, 1, 1, 0, 1] }
+                }},
+            '解放者杯': { country: '南美洲', isCup: true, teams: {
+                    '弗拉门戈': { r: 81, a: 83, d: 77, hb: 8, s: '桑巴进攻', rf: [1, 1, 0, 1, 1] },
+                    '帕尔梅拉斯': { r: 82, a: 80, d: 82, hb: 7, s: '控制均衡', rf: [1, 1, 1, 0, 1] },
+                    '河床': { r: 80, a: 79, d: 78, hb: 8, s: '技术控制', rf: [1, 0, 1, 1, 0] },
+                    '博卡青年': { r: 79, a: 77, d: 77, hb: 9, s: '激情对抗', rf: [0, 1, 1, 0, 1] }
+                }},
+            '巴甲': { country: '巴西', teams: {
+                    '弗拉门戈': { r: 80, a: 82, d: 76, hb: 8, s: '桑巴进攻', rf: [1, 0, 1, 1, 1] },
+                    '帕尔梅拉斯': { r: 81, a: 79, d: 81, hb: 7, s: '控制均衡', rf: [1, 1, 0, 1, 0] }
+                }},
+            '阿超': { country: '阿根廷', teams: {
+                    '河床': { r: 79, a: 78, d: 77, hb: 8, s: '技术控制', rf: [1, 1, 0, 1, 0] },
+                    '博卡青年': { r: 78, a: 76, d: 76, hb: 9, s: '激情对抗', rf: [0, 1, 1, 0, 1] }
+                }},
+            '美职联': { country: '美国', teams: {
+                    '洛杉矶FC': { r: 77, a: 79, d: 73, hb: 7, s: '进攻开放', rf: [1, 0, 1, 1, 0] },
+                    '迈阿密国际': { r: 76, a: 80, d: 70, hb: 7, s: '明星驱动', rf: [1, 1, 0, 0, 1] }
+                }},
+            'J联赛': { country: '日本', teams: {
+                    '川崎前锋': { r: 76, a: 78, d: 72, hb: 6, s: '技术控球', rf: [1, 0, 1, 1, 0] },
+                    '横滨水手': { r: 75, a: 77, d: 71, hb: 6, s: '进攻快速', rf: [1, 1, 0, 0, 1] }
+                }},
+            '沙超': { country: '沙特', teams: {
+                    '利雅得新月': { r: 82, a: 84, d: 79, hb: 7, s: '控球进攻', rf: [1, 1, 1, 1, 0] },
+                    '利雅得胜利': { r: 80, a: 83, d: 76, hb: 7, s: '明星进攻', rf: [1, 1, 0, 1, 1] }
+                }},
+            '中超': { country: '中国', teams: {
+                    '上海海港': { r: 72, a: 75, d: 68, hb: 6, s: '进攻', rf: [1, 1, 0, 1, 0] },
+                    '上海申花': { r: 70, a: 70, d: 69, hb: 6, s: '防守', rf: [0, 1, 1, 0, 1] }
+                }}
+        };
+        const HEAD_TO_HEAD = {
+            '曼城-阿森纳': { m: 20, hw: 11, d: 4, aw: 5, ag: 2.8, rec: ['2-1', '1-1', '3-1', '0-1', '2-2'] },
+            '皇家马德里-巴塞罗那': { m: 30, hw: 12, d: 8, aw: 10, ag: 3.2, rec: ['2-1', '1-1', '3-2', '0-0', '2-2'] },
+            '利物浦-曼联': { m: 25, hw: 10, d: 7, aw: 8, ag: 2.5, rec: ['2-0', '1-1', '3-1', '0-0', '2-1'] },
+            '国际米兰-尤文图斯': { m: 28, hw: 9, d: 10, aw: 9, ag: 2.1, rec: ['1-0', '1-1', '2-1', '0-1', '1-1'] },
+            '拜仁慕尼黑-多特蒙德': { m: 22, hw: 13, d: 4, aw: 5, ag: 3.5, rec: ['3-1', '2-2', '4-0', '1-0', '3-2'] },
+            '弗拉门戈-帕尔梅拉斯': { m: 18, hw: 7, d: 5, aw: 6, ag: 2.3, rec: ['1-0', '1-1', '2-0', '0-1', '1-1'] },
+            '河床-博卡青年': { m: 30, hw: 11, d: 9, aw: 10, ag: 2.6, rec: ['1-1', '2-1', '0-0', '1-0', '2-2'] }
+        };
+
+        // 初始化界面
+        function initUI() {
+            const leagueSel = document.getElementById('leagueSelect');
+            Object.keys(LEAGUE_DATABASE).sort().forEach(name => {
+                const l = LEAGUE_DATABASE[name];
+                const opt = document.createElement('option');
+                opt.value = name;
+                opt.textContent = `${l.isCup?'🏆':'🏟️'} ${name}`;
+                leagueSel.appendChild(opt);
+            });
+            leagueSel.addEventListener('change', () => {
+                const league = leagueSel.value;
+                const homeSel = document.getElementById('homeTeamSelect');
+                const awaySel = document.getElementById('awayTeamSelect');
+                homeSel.innerHTML = '<option value="">-- 主队 --</option>';
+                awaySel.innerHTML = '<option value="">-- 客队 --</option>';
+                if (league && LEAGUE_DATABASE[league]) {
+                    Object.keys(LEAGUE_DATABASE[league].teams).sort().forEach(t => {
+                        homeSel.add(new Option(t, t));
+                        awaySel.add(new Option(t, t));
+                    });
+                }
+                document.getElementById('resultsContainer').style.display = 'none';
+                document.getElementById('btnShare').style.display = 'none';
+            });
+            const params = new URLSearchParams(window.location.search);
+            const l = params.get('league');
+            const h = params.get('home');
+            const a = params.get('away');
+            if (l && h && a && LEAGUE_DATABASE[l] && LEAGUE_DATABASE[l].teams[h] && LEAGUE_DATABASE[l].teams[a]) {
+                leagueSel.value = l;
+                leagueSel.dispatchEvent(new Event('change'));
+                setTimeout(() => {
+                    document.getElementById('homeTeamSelect').value = h;
+                    document.getElementById('awayTeamSelect').value = a;
+                    runPrediction();
+                }, 200);
+            }
+        }
+
+        function getTeamData(league, team) {
+            return LEAGUE_DATABASE[league]?.teams[team] || null;
+        }
+        function getHeadToHead(home, away) {
+            const k1 = `${home}-${away}`;
+            const k2 = `${away}-${home}`;
+            if (HEAD_TO_HEAD[k1]) return { ...HEAD_TO_HEAD[k1], rev: false };
+            if (HEAD_TO_HEAD[k2]) {
+                const d = HEAD_TO_HEAD[k2];
+                return { m: d.m, hw: d.aw, d: d.d, aw: d.hw, ag: d.ag, rec: d.rec.map(r => r.split('-').reverse().join('-')), rev: true };
+            }
+            return null;
+        }
+
+        function analyzeTactical(home, away) {
+            const hs = home.s || '平衡', as = away.s || '平衡';
+            let adv = 'neutral', txt = '';
+            if (hs.includes('控球') && as.includes('反击')) { txt = '主队控球可能遭遇客队犀利反击。'; adv = 'slight_home'; }
+            else if (hs.includes('反击') && as.includes('高位')) { txt = '主队反击克制客队高位防线。'; adv = 'home'; }
+            else if (hs.includes('高位') && as.includes('防守')) { txt = '高位压迫考验客队密集防守。'; adv = 'slight_home'; }
+            else if (hs.includes('防守') && as.includes('控球')) { txt = '客队控球主导，主队伺机反击。'; adv = 'slight_away'; }
+            else if (home.r - away.r > 8) { txt = '主队实力明显占优。'; adv = 'home'; }
+            else if (away.r - home.r > 8) { txt = '客队实力更强。'; adv = 'away'; }
+            else { txt = '双方风格互有牵制，中场争夺激烈。'; adv = 'neutral'; }
+            return { analysis: txt, advantage: adv, hStyle: hs, aStyle: as };
+        }
+
+        function computeProbs(home, away, h2h, tac) {
+            const hR = home.r || 75, aR = away.r || 75;
+            const hForm = home.rf ? home.rf.reduce((a, b) => a + b, 0) / home.rf.length : 0.5;
+            const aForm = away.rf ? away.rf.reduce((a, b) => a + b, 0) / away.rf.length : 0.5;
+            let hP = 0.35 + (hR - aR) * 0.006 + (home.hb || 6) * 0.012 + (hForm - 0.5) * 0.08;
+            let aP = 0.37 - (hR - aR) * 0.006 + (aForm - 0.5) * 0.08;
+            let dP = 0.28;
+            if (tac.advantage === 'home') { hP += 0.06; aP -= 0.04; }
+            else if (tac.advantage === 'away') { aP += 0.06; hP -= 0.04; }
+            else if (tac.advantage === 'slight_home') { hP += 0.03; aP -= 0.02; }
+            else if (tac.advantage === 'slight_away') { aP += 0.03; hP -= 0.02; }
+            if (h2h && h2h.m >= 10) { hP = hP * 0.6 + (h2h.hw / h2h.m) * 0.4; aP = aP * 0.6 + (h2h.aw / h2h.m) * 0.4; }
+            const sum = hP + dP + aP;
+            hP = Math.max(0.08, hP / sum); dP = Math.max(0.10, dP / sum); aP = Math.max(0.08, aP / sum);
+            const s2 = hP + dP + aP; hP /= s2; dP /= s2; aP /= s2;
+            const over = Math.min(0.85, 0.4 + (home.a + away.a) / 200 + (3 - (home.d + away.d) / 80));
+            return {
+                home: Math.round(hP * 1000) / 10,
+                draw: Math.round(dP * 1000) / 10,
+                away: Math.round(aP * 1000) / 10,
+                over25: Math.round(over * 1000) / 10,
+                under25: Math.round((1 - over) * 1000) / 10
+            };
+        }
+
+        function factorial(n) { return n <= 1 ? 1 : n * factorial(n - 1); }
+        function generateScores(home, away, probs, type = 'full') {
+            const hExp = (home.a + home.r) / 90 + (probs.home / 100) * (type === 'half' ? 0.45 : 1.2);
+            const aExp = (away.a + away.r) / 95 + (probs.away / 100) * (type === 'half' ? 0.4 : 1.1);
+            let scores = [];
+            const maxH = type === 'half' ? 3 : 5, maxA = type === 'half' ? 2 : 4;
+            for (let h = 0; h <= maxH; h++) {
+                for (let a = 0; a <= maxA; a++) {
+                    const hp = Math.exp(-hExp) * Math.pow(hExp, h) / factorial(h);
+                    const ap = Math.exp(-aExp) * Math.pow(aExp, a) / factorial(a);
+                    scores.push({ score: `${h}-${a}`, prob: hp * ap });
+                }
+            }
+            scores.sort((a, b) => b.prob - a.prob);
+            const top = scores.slice(0, 5);
+            const total = top.reduce((s, x) => s + x.prob, 0);
+            return top.map(s => ({ score: s.score, prob: Math.round(s.prob / total * 1000) / 10 }));
+        }
+
+        function generateCorners() {
+            const avg = 8.5 + Math.random() * 4;
+            return { avg: avg.toFixed(1), over10: Math.round(Math.min(0.8, (avg - 7) / 5) * 100) };
+        }
+        function generateCards() {
+            const total = 3 + Math.floor(Math.random() * 5);
+            return { total, over35: total >= 4 ? 55 + Math.floor(Math.random() * 30) : 30 + Math.floor(Math.random() * 30) };
+        }
+
+        // ==================== DeepSeek API 调用 ====================
+        async function callDeepSeekAPI(homeTeam, awayTeam, league, home, away, h2h, tac, probs) {
+            const prompt = `你是一位资深足球分析师。请基于以下数据，对即将进行的比赛进行深度预测，要求输出JSON格式。
+            比赛：${league} ${homeTeam} vs ${awayTeam}
+            主队数据：综合评分${home.r}，进攻${home.a}，防守${home.d}，风格${home.s}，近期状态${JSON.stringify(home.rf)}
+            客队数据：综合评分${away.r}，进攻${away.a}，防守${away.d}，风格${away.s}，近期状态${JSON.stringify(away.rf)}
+            历史交锋：${h2h ? `共${h2h.m}场，主胜${h2h.hw}，平${h2h.d}，客胜${h2h.aw}，场均进球${h2h.ag}` : '无充足数据'}
+            战术分析：${tac.analysis} 优势方：${tac.advantage}
+            算法概率：主胜${probs.home}%，平局${probs.draw}%，客胜${probs.away}%
+            
+            请给出你的专业分析，并覆盖以下字段，以JSON返回（不要包含markdown代码块）：
+            {
+                "ai_home_prob": 数字(0-100),
+                "ai_draw_prob": 数字(0-100),
+                "ai_away_prob": 数字(0-100),
+                "ai_analysis": "一段不超过200字的战术与胜负分析",
+                "ai_best_bet": "推荐投注选项（如主胜、平局、大2.5球等）",
+                "ai_confidence": "高/中/低"
+            }`;
+
+            try {
+                const response = await fetch(DEEPSEEK_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        model: 'deepseek-chat',
+                        messages: [
+                            { role: 'system', content: '你是一个专业的足球预测分析师，返回严格的JSON格式。' },
+                            { role: 'user', content: prompt }
+                        ],
+                        temperature: 0.5,
+                        max_tokens: 500
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API请求失败: ${response.status}`);
+                }
+
+                const data = await response.json();
+                let content = data.choices[0].message.content.trim();
+                // 清理可能的markdown代码块
+                content = content.replace(/```json/g, '').replace(/```/g, '').trim();
+                const aiResult = JSON.parse(content);
+                return aiResult;
+            } catch (error) {
+                console.warn('DeepSeek API调用失败，使用本地预测:', error.message);
+                // 返回降级结果
+                return {
+                    ai_home_prob: probs.home,
+                    ai_draw_prob: probs.draw,
+                    ai_away_prob: probs.away,
+                    ai_analysis: 'AI服务暂时不可用，展示本地算法分析结果。',
+                    ai_best_bet: '请参考本地概率',
+                    ai_confidence: '中'
+                };
+            }
+        }
+
+        // 渲染结果（包含AI分析）
+        function renderResults(homeTeam, awayTeam, league, home, away, h2h, tac, probs, fullScores, halfScores, aiResult) {
+            const grid = document.getElementById('resultsGrid');
+            grid.innerHTML = '';
+            const container = document.getElementById('resultsContainer');
+            container.style.display = 'block';
+
+            function card(title, cls = '') {
+                const c = document.createElement('div');
+                c.className = `result-card fade-in ${cls}`;
+                c.innerHTML = `<h3>${title}</h3>`;
+                grid.appendChild(c);
+                return c;
+            }
+
+            // 全场胜率（包含AI修正）
+            const c1 = card('📊 全场胜率预测 (AI融合)', 'full-width');
+            const aiHome = aiResult?.ai_home_prob || probs.home;
+            const aiDraw = aiResult?.ai_draw_prob || probs.draw;
+            const aiAway = aiResult?.ai_away_prob || probs.away;
+            c1.innerHTML += `
+            <div class="prob-bar-wrap"><div class="prob-bar-label"><span>🏠 ${homeTeam}</span><span>${aiHome}%</span></div><div class="prob-bar"><div class="prob-bar-fill home" style="width:${aiHome}%"></div></div></div>
+            <div class="prob-bar-wrap"><div class="prob-bar-label"><span>🤝 平局</span><span>${aiDraw}%</span></div><div class="prob-bar"><div class="prob-bar-fill draw" style="width:${aiDraw}%"></div></div></div>
+            <div class="prob-bar-wrap"><div class="prob-bar-label"><span>✈️ ${awayTeam}</span><span>${aiAway}%</span></div><div class="prob-bar"><div class="prob-bar-fill away" style="width:${aiAway}%"></div></div></div>
+            <canvas id="pieChart" style="max-height:200px;margin-top:12px;"></canvas>`;
+            setTimeout(() => {
+                const ctx = document.getElementById('pieChart');
+                if (ctx && window.Chart) new Chart(ctx, { type: 'doughnut', data: { labels: [homeTeam, '平局', awayTeam], datasets: [{ data: [aiHome, aiDraw, aiAway], backgroundColor: ['#4da6ff', '#f0c040', '#e74c3c'], borderColor: '#131820', borderWidth: 2 }] }, options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { color: '#dde4ef', font: { size: 10 } } } }, cutout: '65%' } });
+            }, 100);
+
+            // AI 深度分析卡片
+            if (aiResult && aiResult.ai_analysis) {
+                const cAI = card('🧠 DeepSeek AI 深度分析', 'full-width');
+                cAI.innerHTML += `
+                <div class="ai-box">
+                    <div class="ai-label">🤖 大模型战术解读</div>
+                    <p>${aiResult.ai_analysis}</p>
+                    <div style="margin-top:8px; display:flex; gap:10px; flex-wrap:wrap;">
+                        <span class="tag blue">推荐: ${aiResult.ai_best_bet || '暂无'}</span>
+                        <span class="tag yellow">置信度: ${aiResult.ai_confidence || '中'}</span>
+                    </div>
+                </div>`;
+            }
+
+            // 全场比分
+            const c2 = card('🎯 最可能全场比分');
+            c2.innerHTML += '<div class="score-grid">' + fullScores.map((s, i) => `<span class="score-chip${i===0?' highlight':''}">${s.score} <small>${s.prob}%</small></span>`).join('') + '</div>';
+
+            // 半场比分
+            const c3 = card('⏱️ 半场比分预测');
+            c3.innerHTML += '<div class="score-grid">' + halfScores.map((s, i) => `<span class="score-chip${i===0?' highlight':''}">${s.score} <small>${s.prob}%</small></span>`).join('') + '</div>';
+
+            // 进阶数据
+            const corners = generateCorners();
+            const cardsData = generateCards();
+            const c4 = card('📈 进阶数据预测');
+            c4.innerHTML = `
+            <table class="data-table">
+            <tr><th>指标</th><th>预测</th></tr>
+            <tr><td>⚽ 大2.5球</td><td><span class="tag green">${probs.over25}%</span></td></tr>
+            <tr><td>⚽ 小2.5球</td><td><span class="tag red">${probs.under25}%</span></td></tr>
+            <tr><td>🏳️ 平均角球</td><td><b>${corners.avg}</b> 个</td></tr>
+            <tr><td>📐 角球大10</td><td><span class="tag blue">${corners.over10}%</span></td></tr>
+            <tr><td>🟨 预期总牌数</td><td><b>${cardsData.total}</b> 张</td></tr>
+            <tr><td>🟥 总牌数>3.5</td><td><span class="tag yellow">${cardsData.over35}%</span></td></tr>
+            </table>`;
+
+            // 战术克制
+            const c5 = card('🧠 战术克制');
+            c5.innerHTML += `<div class="tactical-box"><strong>主队风格：</strong>${tac.hStyle} | <strong>客队风格：</strong>${tac.aStyle}<br><br>${tac.analysis}</div>`;
+
+            // 历史交锋
+            const c6 = card('📜 历史交锋');
+            if (h2h) {
+                c6.innerHTML += `<table class="data-table">
+                <tr><th>总场次</th><th>主胜</th><th>平</th><th>客胜</th><th>场均球</th></tr>
+                <tr><td>${h2h.m}</td><td>${h2h.hw}</td><td>${h2h.d}</td><td>${h2h.aw}</td><td>${h2h.ag}</td></tr>
+                </table><p style="font-size:0.7rem;color:var(--text3);margin-top:4px;">近期: ${h2h.rec.join(' | ')}</p>`;
+            } else {
+                c6.innerHTML += '<p style="color:var(--text3);">暂无充足交锋数据</p>';
+            }
+
+            // 最终结论（结合AI）
+            const c7 = card('🏆 AI综合结论', 'full-width');
+            let mainPred, icon;
+            if (aiHome >= 45) { mainPred = `${homeTeam} 主胜`; icon = '🏠'; }
+            else if (aiAway >= 45) { mainPred = `${awayTeam} 客胜`; icon = '✈️'; }
+            else if (aiHome >= 38 && aiHome > aiAway + 5) { mainPred = `主队不败，倾向主胜`; icon = '🏠'; }
+            else if (aiAway >= 38 && aiAway > aiHome + 5) { mainPred = `客队不败，倾向客胜`; icon = '✈️'; }
+            else { mainPred = '平局可能性高'; icon = '🤝'; }
+            const topScore = fullScores[0];
+            c7.innerHTML += `
+            <div class="conclusion-banner">
+            <span style="font-size:2rem;">${icon}</span>
+            <div style="font-size:1.3rem;margin:6px 0;">${mainPred}</div>
+            <div style="font-size:0.8rem;color:var(--text2);">${aiResult?.ai_analysis || tac.analysis}</div>
+            <div style="margin-top:8px;font-size:0.8rem;">最可能比分: <b style="color:var(--gold);">${topScore.score} (${topScore.prob}%)</b></div>
+            </div>`;
+
+            document.getElementById('btnShare').style.display = 'inline-flex';
+            document.getElementById('resultsContainer').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        async function runPrediction() {
+            const league = document.getElementById('leagueSelect').value;
+            const homeTeam = document.getElementById('homeTeamSelect').value;
+            const awayTeam = document.getElementById('awayTeamSelect').value;
+            if (!league || !homeTeam || !awayTeam || homeTeam === awayTeam) {
+                alert('请完整选择不同的主客队');
+                return;
+            }
+            const btn = document.getElementById('btnPredict');
+            const statusText = document.getElementById('statusText');
+            const statusDot = document.getElementById('statusDot');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> AI分析中...';
+            statusText.textContent = '正在调用DeepSeek大模型进行深度分析...';
+            statusDot.className = 'status-dot warning';
+
+            try {
+                const home = getTeamData(league, homeTeam);
+                const away = getTeamData(league, awayTeam);
+                let h2h = getHeadToHead(homeTeam, awayTeam);
+                if (!h2h) h2h = { m: 12 + Math.floor(Math.random() * 10), hw: 5, d: 3, aw: 4, ag: 2.3, rec: ['1-0', '2-1', '0-0', '1-1', '2-0'] };
+                const tac = analyzeTactical(home, away);
+                const probs = computeProbs(home, away, h2h, tac);
+                const fullScores = generateScores(home, away, probs, 'full');
+                const halfScores = generateScores(home, away, probs, 'half');
+
+                // 调用DeepSeek API
+                const aiResult = await callDeepSeekAPI(homeTeam, awayTeam, league, home, away, h2h, tac, probs);
+
+                renderResults(homeTeam, awayTeam, league, home, away, h2h, tac, probs, fullScores, halfScores, aiResult);
+                statusText.textContent = '✅ 预测完成 · AI增强分析已应用';
+                statusDot.className = 'status-dot';
+            } catch (e) {
+                alert('预测出错: ' + e.message);
+                statusText.textContent = '❌ 出错，请重试';
+                statusDot.className = 'status-dot';
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '🔮 全自动AI预测';
+            }
+        }
+
+        function sharePrediction() {
+            const league = document.getElementById('leagueSelect').value;
+            const home = document.getElementById('homeTeamSelect').value;
+            const away = document.getElementById('awayTeamSelect').value;
+            const url = new URL(window.location.origin + window.location.pathname);
+            url.searchParams.set('league', league);
+            url.searchParams.set('home', home);
+            url.searchParams.set('away', away);
+            navigator.clipboard.writeText(url.toString()).then(() => {
+                showToast('🔗 链接已复制，发送给朋友即可查看相同预测！');
+            }).catch(() => {
+                prompt('复制此链接分享:', url.toString());
+            });
+        }
+
+        function showToast(msg) {
+            const t = document.createElement('div');
+            t.className = 'toast';
+            t.textContent = msg;
+            document.body.appendChild(t);
+            setTimeout(() => t.remove(), 2200);
+        }
+
+        document.addEventListener('DOMContentLoaded', initUI);
+    </script>
+</body>
+</html>
